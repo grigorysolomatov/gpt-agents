@@ -4,7 +4,7 @@
 
 > :warning: **This README was generated using ChatGPT**: The content of this document was generated through an AI model, and while every effort has been made to ensure accuracy, there may be some discrepancies or missing information. Please feel free to contribute or raise issues as necessary.
 
-This repository contains a Python script that uses OpenAI's GPT-3 model to generate responses to prompts. The script uses the Typer library to create a command-line interface (CLI) for interacting with the GPT-3 model.
+This repository contains a Python script that uses OpenAI's GPT model to generate responses to prompts. The script uses the Typer library to create a command-line interface (CLI) for interacting with the GPT model.
 
 ## Dependencies
 
