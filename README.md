@@ -1,10 +1,10 @@
-# GPT Agent
+# GPT Agents
 
 ## Disclaimer
 
-> :warning: **This README was generated using ChatGPT**: The content of this document was generated through an AI model, and while every effort has been made to ensure accuracy, there may be some discrepancies or missing information. Please feel free to contribute or raise issues as necessary.
+> :warning: **This README was generated using ChatGPT**: The content of this document was generated through an AI model. While every effort has been made to ensure accuracy, there may be some discrepancies or missing information. We encourage contributions and issue reporting to improve the document.
 
-This repository contains a Python script that uses OpenAI's GPT model to generate responses to prompts. The script uses the Typer library to create a command-line interface (CLI) for interacting with the GPT model.
+This repository contains a Python script that leverages OpenAI's GPT model to generate responses to prompts. The script employs the Typer library to create a command-line interface (CLI) for interacting with the GPT model.
 
 ## Dependencies
 
@@ -22,7 +22,7 @@ The script provides three commands:
 
 1. `ask`: Send a prompt to a GPT agent.
 2. `agents`: List available GPT agents.
-3. `convo`: Have a back and forth conversation with a GPT agent.
+3. `convo`: Engage in a back-and-forth conversation with a GPT agent.
 
 ### Ask Command
 
@@ -42,7 +42,7 @@ python main.py agents --agents <path_to_agents.toml>
 
 ### Convo Command
 
-The `convo` command initiates a back and forth conversation with a GPT agent. The command requires two arguments: the name of the agent and the initial prompt. The command also accepts an optional `agents` option that specifies the path to a TOML file containing the agent configurations.
+The `convo` command initiates a back-and-forth conversation with a GPT agent. The command requires two arguments: the name of the agent and the initial prompt. The command also accepts an optional `agents` option that specifies the path to a TOML file containing the agent configurations.
 
 ```bash
 python main.py convo <agent> <prompt> --agents <path_to_agents.toml>
