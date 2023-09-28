@@ -8,7 +8,6 @@ import dotenv
 
 app = typer.Typer()
 
-
 class Agent:
     def __init__(self, name, config):
         self.name = name
