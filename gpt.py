@@ -5,6 +5,9 @@ import openai
 import toml
 import os
 import dotenv
+import inspect
+import importlib.util
+import json
 
 app = typer.Typer()
 
@@ -25,26 +28,57 @@ class Agent:
 
 @app.command(name="ask", help="Send prompt to a gpt agent")
 def command_ask(
-        agent: str   = typer.Argument(),
-        prompt: str  = typer.Argument(),
-        agents: str  = typer.Option(
+        agent: str     = typer.Argument(),
+        prompt: str    = typer.Argument(),
+        agents: str    = typer.Option(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "agents.toml")
+        ),
+        functions: str = typer.Option(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), "functions.py")
         ),
 ):
     dotenv.load_dotenv()
     openai.api_key = os.getenv("API_KEY")
     agent          = Agent(agent, toml.load(agents)[agent])
+
+    functions = get_classes_from_module(get_module_from_path(functions)) if functions else {}
     
-    response = openai.ChatCompletion.create(
-        model       = agent.model,
-        max_tokens  = agent.max_tokens,
-        temperature = agent.temperature,
-        messages    = [
-            {"role" : "system", "content" : agent.get_system_msg()},
-            {"role" : "user", "content" : prompt},
-        ],
+    messages = [
+        {"role" : "system", "content" : agent.get_system_msg()},
+        {"role" : "user", "content" : prompt},
+    ]
+
+    while True:
+        chat_args = dict(
+            model       = agent.model,
+            max_tokens  = agent.max_tokens,
+            temperature = agent.temperature,
+            messages    = messages,
+        )
+
+        if functions:
+            chat_args["functions"] = [function.info() for function in functions.values()]
         
-    )
+        response = openai.ChatCompletion.create(**chat_args)
+        if response["choices"][0]["finish_reason"] == "function_call":
+            message = response["choices"][0]["message"]
+            messages.append(message)
+            function = functions[message["function_call"]["name"]]            
+            print("content: {}".format(message["content"]))
+            print("function_call: {}".format(message["function_call"]))
+            if input("Allow? (y/n): ") == "y":
+                function_response = function.run(message["function_call"]["arguments"])
+            else:
+                function_response = "Not allowed to run this command"
+            messages.append({
+                "role": "function",
+                "name": function.info()["name"],
+                "content": function_response,
+            })
+            print("function_result: {}".format(function_response))
+        else:
+            break
+        
     print(agent.process_response(response))
 
 @app.command(name="agents", help="List available GPT agents")
@@ -139,4 +173,15 @@ def convo_to_prompt(convo, length=80, sep="#"):
         for part in convo
     )
 
+# Helpers ######################################################################
+def get_module_from_path(filepath):
+    spec = importlib.util.spec_from_file_location("module.name", filepath)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def get_classes_from_module(module):
+    return {member[1].info()["name"]: member[1] for member in inspect.getmembers(module)
+            if inspect.isclass(member[1])
+            and member[1].__module__ == module.__name__}
 if __name__ == "__main__": app()
