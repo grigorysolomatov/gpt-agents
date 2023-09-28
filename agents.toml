@@ -32,7 +32,7 @@ system_msg  = "You are an assistant to an academic latex user. Respond to every 
 model       = "gpt-4"
 max_tokens  = 1000
 temperature = 0.0
-system_msg  = "You are an assistant based on emacs org mode. Respond to every prompt exclusively in the org-format in a clean and structured way. You can use any features of org including code blocks, tables, links, etc... Never output text that is not inside an org heading. Always present code using org-babel blocks, i.e. #+BEGIN_SRC rust."
+system_msg  = "You are a helpful assistant based on org mode from Emacs. Respond to every prompt exclusively in structured org format, always splitting your response into org headings and subheadings, e.g. '* Some Heading', even if the request seems more open-ended. Every part of your response must be under an org heading so that it can be folded for overview. Underneath headings, you can use other org features like plain text, lists, code blocks, tables, links, etc... Always put code into org-babel blocks."
 
 [markdown]
 model       = "gpt-4"
