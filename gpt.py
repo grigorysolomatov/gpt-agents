@@ -60,26 +60,29 @@ def command_ask(
             chat_args["functions"] = [function.info() for function in functions.values()]
         
         response = openai.ChatCompletion.create(**chat_args)
-        if response["choices"][0]["finish_reason"] == "function_call":
-            message = response["choices"][0]["message"]
-            messages.append(message)
-            function = functions[message["function_call"]["name"]]            
-            print("content: {}".format(message["content"]))
-            print("function_call: {}".format(message["function_call"]))
-            if input("Allow? (y/n): ") == "y":
-                function_response = function.run(message["function_call"]["arguments"])
-            else:
-                function_response = "Not allowed to run this command"
-            messages.append({
-                "role": "function",
-                "name": function.info()["name"],
-                "content": function_response,
-            })
-            print("function_result: {}".format(function_response))
-        else:
-            break
+
+        if response["choices"][0]["finish_reason"] != "function_call": break
+        process_function_call(response, messages, functions)
         
     print(agent.process_response(response))
+        
+def process_function_call(response, messages, functions):
+    message = response["choices"][0]["message"]
+    messages.append(message)
+    function = functions[message["function_call"]["name"]]            
+    print("content:\n{}".format(message["content"]))
+    print("function_call:\n{}".format(message["function_call"]))
+    if input("Allow? [y/n]: ") == "y":
+        function_response = function.run(message["function_call"]["arguments"])
+    else:
+        function_response = "Not allowed to run this command"
+        
+    messages.append({
+        "role": "function",
+        "name": function.info()["name"],
+        "content": function_response,
+    })
+    print("function_result:\n{}".format(function_response))
 
 @app.command(name="agents", help="List available GPT agents")
 def command_agents(
