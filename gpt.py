@@ -93,6 +93,7 @@ def command_convo(
         agent: str  = typer.Argument(help = "GPT agent to use"),
         prompt: str = typer.Argument(help = "Prompt to send to agent"),
         sep: str    = typer.Option("#", help = "Message separator symbol (one character)"),
+        sep2: str   = typer.Option(None, help = "Second message separator symbol"),
         length: int = typer.Option(80, help = "Separator length"),
         agents: str = typer.Option(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "agents.toml"),
@@ -137,36 +138,38 @@ def command_convo(
         }]
         comming_role = "function"
 
-    returned = convo_to_prompt(out_convo, length=length, sep=sep)
+    returned = convo_to_prompt(out_convo, length=length, sep=sep, sep2=sep2)
 
     print("\n".join([
         returned,
-        make_role_sep(comming_role, length=length, sep=sep),
+        make_role_sep(comming_role, length=length, sep=sep, sep2=sep2),
     ]))
-def get_sep_role(line, length=80, sep="#"):
-    if len(line) != length:
-        return
+def get_sep_role(line, length=80, sep="#", sep2=None):
+    sep2 = sep if sep2 is None else sep2
+    
+    if len(line) != length: return
 
     parts = line.split()
-    if len(parts) != 3:
-        return
-
-    if (parts[0], set(parts[2])) != (sep, {sep}):
-        return
+    
+    if len(parts) != 3: return
+    if (parts[0], set(parts[2])) != (sep, {sep2}): return
 
     return parts[1]
-def make_role_sep(role, length=80, sep="#"):
+def make_role_sep(role, length=80, sep="#", sep2=None):
+    sep2 = sep if sep2 is None else sep2
+    
     start = f"{sep} {role} "
-    end = sep*(length - len(start))
+    end = sep2*(length - len(start))
     return start + end
-def prompt_to_convo(prompt, length=80, sep="#"):
+def prompt_to_convo(prompt, length=80, sep="#", sep2=None):    
     lines = prompt.split("\n")
-    if get_sep_role(lines[0], length=length, sep=sep) is None:
-        lines.insert(0, make_role_sep("user", length=length, sep=sep))
-
+    
+    if get_sep_role(lines[0], length=length, sep=sep, sep2=sep2) is None:
+        lines.insert(0, make_role_sep("user", length=length, sep=sep, sep2=sep2))
+        
     convo = []
     for i, line in enumerate(lines):
-        role = get_sep_role(line, length=length, sep=sep)
+        role = get_sep_role(line, length=length, sep=sep, sep2=sep2)
         if role is not None:
             convo.append({
                 "role": role,
@@ -176,9 +179,9 @@ def prompt_to_convo(prompt, length=80, sep="#"):
             convo[-1]["content"] += f"{line}" + ("\n" if i < len(lines)-1 else "")
 
     return convo
-def convo_to_prompt(convo, length=80, sep="#"):
+def convo_to_prompt(convo, length=80, sep="#", sep2=None):
     return "\n".join(
-        "\n".join([make_role_sep(part["role"], length=length, sep=sep), part["content"]])
+        "\n".join([make_role_sep(part["role"], length=length, sep=sep, sep2=sep2), part["content"]])
         for part in convo
     )
 def convo_to_gpt(convo, functions):
@@ -197,19 +200,20 @@ def convo_to_gpt(convo, functions):
 def command_convofunc(
         prompt: str    = typer.Argument(help = "Prompt to send to agent"),
         sep: str       = typer.Option("#", help = "Message separator symbol (one character)"),
+        sep2: str      = typer.Option(None, help = "Second message separator symbol"),
         length: int    = typer.Option(80, help = "Separator length"),
         functions: str = typer.Option(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "functions.py")
         ),
 ):
-    convo = prompt_to_convo(prompt, length=length, sep=sep)
+    convo = prompt_to_convo(prompt, length=length, sep=sep, sep2=sep2)
 
     if len(convo) <= 2:
         raise ValueError()
-
+    
     if (convo[-2]["role"], convo[-1]["role"]) != ("function_call", "function"):
         raise ValueError()
-
+    
     functions     = get_classes_from_module(get_module_from_path(functions)) if functions else {}
     function_call = json.loads(convo[-2]["content"])
     function      = functions[function_call["name"]]
@@ -239,8 +243,8 @@ def func_eval(convo):
 def get_module_from_path(filepath):
     spec = importlib.util.spec_from_file_location("module.name", filepath)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-return module
+    spec.loader.exec_module(module)    
+    return module
 def get_classes_from_module(module):
     return {member[1].info()["name"]: member[1] for member in inspect.getmembers(module)
             if inspect.isclass(member[1])
